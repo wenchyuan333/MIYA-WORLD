@@ -1,0 +1,89 @@
+# 執行收據｜verify_v13_pairing.py
+
+日期：2026-08-29（Asia/Taipei）
+環境：Termux / Android，Python 3
+分支：feature/protocol-heartbeat-v13
+命令：python3 tools/verify_v13_pairing.py ; echo $?
+隢出碼：0
+統計：29 PASS / 5 SKIP / 0 FAIL
+
+❗ 本檔是**轉錄整理**，由倉庫 owner 貼上的終端輸出整理而成，非位元級對拷。
+貼上文字中部分字形（総/總、証/證）與倉庫原碼有差，屬輸入法或字型茅渲染差異，**未逐字核對**。
+若需位元級憑證，須以 `python3 tools/verify_v13_pairing.py > 檔名` 重定向後直接 commit。
+
+---
+
+## 一、核 9 格 對位律
+
+[PASS] 核區配對數                  got=4                  expected=4
+[PASS] 核對位和 1 <-> 9             got=10                 expected=10
+[PASS] 核對位和 2 <-> 8             got=10                 expected=10
+[PASS] 核對位和 3 <-> 7             got=10                 expected=10
+[PASS] 核對位和 4 <-> 6             got=10                 expected=10
+[PASS] 中宮自對 C0 = 5              got=10                 expected=10
+[PASS] 核區覆蓋 1..9 無重無漏       got=[1..9]             expected=[1..9]
+[PASS] 核區索引總和                  got=45                 expected=45
+
+## 二、PUB 4 格 對位律
+
+[PASS] PUB 配對數                   got=2                  expected=2
+[PASS] PUB 對位和 10 <-> 13         got=23                 expected=23
+[PASS] PUB 對位和 11 <-> 12         got=23                 expected=23
+[PASS] PUB 覆蓋 10..13 無重無漏      got=[10,11,12,13]      expected=[10,11,12,13]
+[PASS] PUB 索引總和 = 2 x 23        got=46                 expected=46
+
+## 三、兩區切分自洽性
+
+[PASS] 核 與 PUB 不相交              got=[]                 expected=[]
+[PASS] 聯集 = 1..13                 got=[1..13]            expected=[1..13]
+[PASS] 維數 9 + 4                   got=13                 expected=13
+[PASS] 全體索引和 = 13 x 14 / 2     got=91                 expected=91
+
+## 四、空間大小
+
+[PASS] 3^13                        got=1594323            expected=1594323
+
+## 五、行列式引擎自檢
+
+[PASS] det(I_13) mod 3             got=1                  expected=1
+[PASS] det(零行矩陣) mod 3           got=0                  expected=0
+[PASS] det([[2,1],[1,2]]) mod 3    got=0                  expected=0
+
+## 六、合法棲息 三條條件
+
+[PASS] I_13 full_det != 0          got=True               expected=True
+[PASS] I_13 pub_det != 0           got=True               expected=True
+[PASS] I_13 合法棲息                got=True               expected=True
+[PASS] 奇異矩陣 不合法              got=False              expected=False
+
+## 七、條件 1 與 3 獨立性 反例
+
+[PASS] 13-循環 full_det != 0       got=True               expected=True
+[PASS] 13-循環 pub_det == 0        got=0                  expected=0
+[PASS] 兩條獨立：整體可逆不推得 PUB 可逆   got=True        expected=True
+[PASS] 13-循環 因 PUB 奇異而不合法   got=False              expected=False
+
+## 八、未驗項目（5 項 SKIP）
+
+[SKIP] |GL(13, F_3)| 具體數值
+       理由 = 本脈本不給數值。需要時應由阶公式 prod (3^13 - 3^k) 現算並單獨入庫。
+
+[SKIP] checksum_f3 的安全性
+       理由 = F_3 線性校驗碼不具不可偵造性。這不是簽章，沒有安全性可驗。
+
+[SKIP] central_offset 的 Delta
+       理由 = 型別未定義（F_3^13 向量？整數？），無法檢查。
+
+[SKIP] PUB 四維 <-> 顯現四維時空
+       理由 = SYMBOLIC 層對應，非推導。不得以本脈本背書。
+
+[SKIP] 對位律 與 洛書 L0 的相容性
+       理由 = K-07 已驗 det(L0) = 360 = 0 mod 3，L0 不屬 GL(3,F_3)。兩層不得互相背書。
+
+## 結果
+
+對位律 與 三條合法棲息條件 全部通過。
+exit 0
+
+本結果只証明格式內部一致且可機械檢查。
+**不証明它描述了任何真實存在的結构。**
