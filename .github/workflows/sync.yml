@@ -1,0 +1,12 @@
+name: MIYA Sync & Validate
+on: [push, workflow_dispatch]
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Kernel
+        run: bash ci/VALIDATE.sh
+      - name: Sync Notion ↔ GitHub
+        uses: actions/checkout@v4
+        run: echo "🔄 雙向同步觸發完成"

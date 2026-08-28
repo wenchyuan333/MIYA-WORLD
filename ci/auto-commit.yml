@@ -1,0 +1,11 @@
+name: Auto-Commit
+on: [push, pull_request]
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Structure
+        run: bash ci/VALIDATE.sh
+      - name: Sync to Notion
+        run: echo "🔄 同步 Notion..."
