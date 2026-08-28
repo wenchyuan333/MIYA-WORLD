@@ -1,0 +1,26 @@
+name: ⚗️ MIYA 煉金術 — 自動組裝跨倉庫UI
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  alchemy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 🔍 全域掃描
+        run: python3 alchemy/scanner.py
+      - name: 🧩 語義映射
+        run: python3 alchemy/mapper.py
+      - name: ⚙️ 自動組裝
+        run: python3 alchemy/assembler.py
+      - name: 🎨 統一UI渲染
+        run: python3 alchemy/renderer.py
+      - name: 📤 提交更新
+        run: |
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "MIYA-Alchemy[bot]"
+          git add alchemy/ ui/
+          git commit -m "🤖 煉金術自動組裝：更新統一UI [skip ci]" || echo "無變更"
+          git push

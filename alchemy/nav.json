@@ -1,0 +1,76 @@
+[
+  {
+    "key": "kernel",
+    "name": "🧠 核心中樞",
+    "desc": "原點論、數學公理、系統核心",
+    "items": [
+      {
+        "path": "protocol/GATE-STRUCTURE.md",
+        "name": "GATE-STRUCTURE",
+        "category": "kernel",
+        "mtime": "2026-08-29T03:19:40.562343"
+      },
+      {
+        "path": "ai-skills/PROMPT-LIBRARY.md",
+        "name": "PROMPT-LIBRARY",
+        "category": "kernel",
+        "mtime": "2026-08-29T03:19:28.574343"
+      }
+    ]
+  },
+  {
+    "key": "canon",
+    "name": "📜 正典規範",
+    "desc": "洛書、黎曼、對稱、共時性",
+    "items": []
+  },
+  {
+    "key": "research",
+    "name": "🔬 研究文檔",
+    "desc": "數理、哲學、交叉學科",
+    "items": []
+  },
+  {
+    "key": "memory",
+    "name": "💾 記憶連續性",
+    "desc": "日誌、版本、狀態",
+    "items": [
+      {
+        "path": "memory/CONTINUITY-LOG.md",
+        "name": "CONTINUITY-LOG",
+        "category": "memory",
+        "mtime": "2026-08-29T03:21:12.822343"
+      }
+    ]
+  },
+  {
+    "key": "protocol",
+    "name": "⚙️ 閘門協定",
+    "desc": "邊界、權限、驗證",
+    "items": []
+  },
+  {
+    "key": "ai-skills",
+    "name": "🤖 AI技能庫",
+    "desc": "提示詞、系統指令、模板",
+    "items": []
+  },
+  {
+    "key": "uiux",
+    "name": "🎨 介面展示",
+    "desc": "UI、視覺、成品",
+    "items": []
+  },
+  {
+    "key": "tools",
+    "name": "🛠️ 工具腳本",
+    "desc": "引擎、腳本、工具",
+    "items": []
+  },
+  {
+    "key": "other",
+    "name": "📁 其他",
+    "desc": "未分類內容",
+    "items": []
+  }
+]
