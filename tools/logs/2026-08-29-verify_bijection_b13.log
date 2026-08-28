@@ -1,0 +1,88 @@
+# 執行收據｜verify_bijection_b13.py
+
+日期：2026-08-29（Asia/Taipei）
+環境：Termux / Android，Python 3
+分支：feature/protocol-heartbeat-v13
+命令：python3 tools/verify_bijection_b13.py ; echo $?
+隢出碼：0
+統計：23 PASS / 3 SKIP / 0 FAIL
+
+❗ 本檔為轉錄整理，非位元級對拷。§ 四的 13x13 矩陣全展開輸出已折縮為文字描述。
+
+---
+
+## 一、sigma 是不是完全定義的雙射
+
+[PASS] 定義域恰好 = 1..13                     got=[1..13]     expected=[1..13]
+[PASS] 值域恰好 = 1..13（因而是雙射）          got=[1..13]     expected=[1..13]
+[PASS] sigma 是對偶：sigma(sigma(i)) = i          got=True        expected=True
+[PASS] 不動點恰好只有中宮 5                     got=[5]         expected=[5]
+[PASS] 互換對數 = 6                             got=6           expected=6
+
+## 二、sigma 守不守對位和
+
+[PASS] 核區每一位 i + sigma(i) = 10             got=[10]        expected=[10]
+[PASS] PUB 每一位 i + sigma(i) = 23              got=[23]        expected=[23]
+[PASS] sigma 不跨區（核 不映到 PUB）              got=True        expected=True
+[PASS] sigma 不跨區（PUB 不映到核）              got=True        expected=True
+
+## 三、P 是合法置換矩陣
+
+[PASS] 每行恰好一個 1                           got=[1]         expected=[1]
+[PASS] 每列恰好一個 1                           got=[1]         expected=[1]
+[PASS] P 對稱（因 sigma 是對偶）                 got=True        expected=True
+[PASS] 跾 trace(P) = 1（只有中宮不動）           got=1           expected=1
+
+## 四、P 的對偶性質
+
+[PASS] P 乘 P = I_13（B<-> 平方 = 恆等）
+       got / expected 均為 13x13 單位矩陣（對角線全 1，其餘全 0），逐元相等
+[PASS] P 不等於 I（階恰好為 2，非 1）              got=False       expected=False
+
+## 五、P 能不能通過合法棲息三條條件
+
+[PASS] det(P) mod 3（6 個互換，偶置換，預期 +1）   got=1           expected=1
+[PASS] det(P) != 0 — P 屬於 GL(13,F_3)          got=True        expected=True
+[PASS] det(P 的 PUB 區) mod 3（兩個互換，預期 +1） got=1           expected=1
+[PASS] pub_det != 0                             got=True        expected=True
+[PASS] 三條全過：B<-> 自身合法棲息                got=True        expected=True
+
+## 六、對比：不守對位律的置換仍可可逆
+
+[PASS] det(單一互換) mod 3 = 2                    got=2           expected=2
+[PASS] 單一互換仍屬 GL(13,F_3)                   got=True        expected=True
+[PASS] 但它不守對位和（1+2 != 10）                got=False       expected=False
+
+## 七、未驗項目（3 項 SKIP）
+
+[SKIP] P 與 OFT 公理 II 的算子 B<-> 是同一物
+       理由 = 未推導。P 是 13 維置換矩陣；OFT 的 B<-> 是 Hilbert 空間上的算子。
+              兩者都滿足 X^2 = I，但「同滿足一條恆等式」不等於同構。
+
+[SKIP] OFT 公理 II 的 <psi|B|phi> = delta(psi - phi) 疑點
+       理由 = 該條令 B<-> 塌成恆等算子，撑不住 B O B = O dagger 那一條。
+              見 canon/ORIGIN-FIELD-THEORY-v0.7.2.md §5 OPEN-ISSUE 1。本腦本不解決它。
+
+[SKIP] 中宮不動 <-> 識一底不動 <-> sigma = 1/2
+       理由 = ANALOGY 層。trace(P) = 1 是算出來的；它的詮釋不是。
+
+## 結果
+
+B<-> 雙射置換矩陣 全部通過。exit 0
+
+已驗：sigma 是 1..13 上的對偶，唯一不動點為中宮 5，
+      且其矩陣形式 P 滿足 HEARTBEAT-V13 自己的三條合法棲息條件。
+**不証明**：P 與 OFT 算子 B<-> 同構。那仍是未推導的。
+
+---
+
+## 建庫者預測的事後核對
+
+推送該脈本時，建庫者在 `tools/README.md` 寫下手算預測：
+
+> 6 個互換為偶置換，所以 det(P) = +1；PUB 區兩個互換也是偶，所以 pub_det = +1。
+
+實測結果：`det(P) = 1`、`pub_det = 1`。**預測與實測一致。**
+
+這條記錄的意義不在「猜對了」，而在預測是**先寫下來、再被檢驗的**。
+若實測為 2 或 0，應修正預測，不得修正 assert。
