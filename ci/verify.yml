@@ -1,0 +1,82 @@
+# NOTE: 本檔位於 ci/verify.yml（非 .github/workflows/），因 API token 缺 workflow scope。
+#
+# 實測錯誤（verbatim）：
+#   failed to create tree: POST /repos/wenchyuan333/MIYA-WORLD/git/trees
+#   403 Resource not accessible by integration
+#
+# 啟用方式（本機執行一次）：
+#   mkdir -p .github/workflows
+#   cp ci/verify.yml .github/workflows/verify.yml
+#   git add .github/workflows/verify.yml
+#   git commit -m 'ci: enable verify workflow'
+#   git push origin main
+#
+# 此模式借自 wenchyuan333/luoshu-terminal（commit f70f7aa）。
+# 同一個 403 在那邊已經解過一次，不必重新發明。
+#
+# 好處：workflow 内容進入版控，可追溯、可 diff。
+# 不把它藏在 API 碰不到的地方，只是多一步 cp。
+#
+# ⚠ 貼完請目視確認 26 行附近的 matrix 引用未被轉義損壊。
+
+name: verify
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fixtures:
+    name: fixtures
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - "3.11"
+          - "3.12"
+          - "3.13"
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: python receipt
+        run: python3 -VV
+
+      # 閘一：fixture 不得依賴第三方套件。
+      # 理由：AUDIT V10-001 的 V1 致命缺陷就是 np.random.seed()
+      # 管不到 @njit 的 Numba RNG。這道閘是把那次教訓寫成規則。
+      - name: gate - no third-party imports in tools/
+        run: |
+          if grep -rnE '^[[:space:]]*(import|from)[[:space:]]+(numpy|scipy|sympy|pandas|numba|matplotlib)' tools/ ; then
+            echo "FAIL: fixture 不得依賴第三方套件。"
+            exit 1
+          fi
+          echo "OK: tools/ 無第三方 import"
+
+      # 閘二：結构索引不得過時。
+      # 這是整套 CI 裡唯一直接針對「連續性断裂」的閘。
+      - name: gate - structure index not stale
+        run: python3 tools/gen_structure.py --check
+
+      - name: run all fixtures
+        env:
+          PYTHONIOENCODING: utf-8
+          PYTHONUTF8: "1"
+        run: python3 tools/verify_all.py
+
+      - name: blob SHA receipt
+        run: |
+          echo "=== git blob SHA-1 per tracked file ==="
+          git ls-files -s | sort

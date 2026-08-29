@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# pre-push hook — 本機先驗，不過就不准推。
+#
+# 安裝（一次）：
+#   cp hooks/pre-push .git/hooks/pre-push
+#   chmod +x .git/hooks/pre-push
+#
+# 緊急繞過（不建議）：
+#   git push --no-verify
+#
+# 層次：
+#   Layer 1  fixture 自己的斷言
+#   Layer 2  本 hook（錯誤到不了 origin）
+#   Layer 3  GitHub Actions（錯誤到了 origin 之後才叫）
+#   Layer 4  branch protection（須 owner 在 UI 手動設）
+#
+# Layer 2 與 Layer 3 不是重複。差別在時間點：
+# hook 在錯誤離開這台裝置前就攛，CI 是事後報告。
+
+set -e
+
+echo "=== pre-push: 本機驗證 ==="
+
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "[pre-push] 找不到 python3，跳過本機驗證。"
+    exit 0
+fi
+
+if [ -f tools/gen_structure.py ]; then
+    echo "--- 結构索引是否過時 ---"
+    if ! python3 tools/gen_structure.py --check; then
+        echo ""
+        echo "=== pre-push: 結构索引過時，推送中止 ==="
+        echo "  請跑："
+        echo "    python3 tools/gen_structure.py"
+        echo "    git add docs/STRUCTURE.md docs/STRUCTURE.json"
+        echo "    git commit --amend --no-edit"
+        exit 1
+    fi
+fi
+
+if [ ! -f tools/verify_all.py ]; then
+    echo "[pre-push] 找不到 tools/verify_all.py，跳過 fixture。"
+    exit 0
+fi
+
+echo "--- fixture 總集 ---"
+if python3 tools/verify_all.py; then
+    echo "=== pre-push: ALL PASS，允許推送 ==="
+    exit 0
+else
+    echo ""
+    echo "=== pre-push: 有 FAIL，推送中止 ==="
+    echo "  修好再推，或 git push --no-verify 繞過。"
+    echo "  繞過的話，遠端 CI 的紅燈由你負責。"
+    exit 1
+fi
