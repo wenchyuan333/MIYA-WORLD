@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MIYA-WORLD 九宮儀表板</title>
+<!--
+  注意：本檔是新增，不是覆蓋 ui/index.html。
+  ui/index.html 自 e5f99cb 就存在（煉金術顯化層），本檔不動它。
+
+  UI 選型理由（型別問題，不是審美問題）：
+    daisyUI 是純 CSS class，沒有 build step，可以塞進單一 HTML 檔，
+    符合主權後台 L1「單檔、可離線、可自持」的設計。
+    shadcn/ui、Chakra UI、Ant Design 都需要 React + build chain，
+    與單檔架構型別不相容。Star 數多寡與此無關。
+
+  離線化（主權後台 L1 要求）：
+    把下面兩個 CDN 資源各下載一份放進 ui/vendor/，再改成相對路徑。
+    在那之前，本頁只算「線上檢視工具」，不算主權後台。
+-->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css">
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="p-4 md:p-8 bg-base-100">
+<div class="max-w-5xl mx-auto">
+
+  <div class="navbar bg-base-200 rounded-box mb-4">
+    <div class="flex-1 px-2">
+      <span class="text-xl font-bold">MIYA-WORLD</span>
+      <span class="ml-2 text-sm opacity-60">九宮儀表板</span>
+    </div>
+    <div class="flex-none text-xs opacity-50 px-2">C0 . O1 . V13 :: PUB :: B</div>
+  </div>
+
+  <div id="warn"></div>
+
+  <h2 class="text-lg font-semibold mt-6 mb-2">一、九宮落地</h2>
+  <div id="grid" class="grid grid-cols-3 gap-2 md:gap-3"></div>
+
+  <h2 class="text-lg font-semibold mt-8 mb-2">二、fixture</h2>
+  <div class="overflow-x-auto"><table class="table table-sm table-zebra" id="fx"></table></div>
+
+  <h2 class="text-lg font-semibold mt-8 mb-2">三、kernel 常量</h2>
+  <div class="overflow-x-auto"><table class="table table-sm table-zebra" id="kn"></table></div>
+
+  <div class="text-xs opacity-50 border-t border-base-300 mt-10 pt-4 leading-relaxed">
+    本頁不計算任何數值，也不儲存任何狀態。所有欄位來自
+    docs/STRUCTURE.json 與 docs/KERNEL-INDEX.json。
+    這兩檔由 tools/gen_structure.py 與 tools/gen_kernel_index.py
+    從 git ls-files 與 kernel/*.md 掃出，不是手寫。
+    讀不到檔案時本頁顯示警告，不顯示佔位假資料。
+  </div>
+
+</div>
+<script>
+const ORDER = ["4","9","2","3","5","7","8","1","6"];
+const ICON = {"4":"🧠","9":"🎨","2":"📜","3":"⚙️","5":"⭕","7":"🤖","8":"🔬","1":"💾","6":"🛠️"};
+
+function warn(msg) {
+  const box = document.getElementById("warn");
+  const d = document.createElement("div");
+  d.className = "alert alert-warning text-sm mb-3";
+  d.textContent = msg;
+  box.appendChild(d);
+}
+
+async function getJson(path) {
+  try {
+    const r = await fetch(path, {cache: "no-store"});
+    if (!r.ok) { return {err: r.status + " " + r.statusText}; }
+    return {ok: await r.json()};
+  } catch (e) {
+    return {err: String(e)};
+  }
+}
+
+function palaceList(data) {
+  const src = data.palaces || data.nine_palaces || data.grid || null;
+  if (!src) { return null; }
+  const rows = Array.isArray(src)
+    ? src
+    : Object.keys(src).map(k => Object.assign({num: k}, src[k]));
+  return rows.map(p => {
+    const files = p.files || p.paths || [];
+    return {
+      num: String(p.num || p.number || p.palace || p.id || ""),
+      name: p.name || p.key || p.dir || "",
+      count: files.length || p.file_count || p.count || 0
+    };
+  });
+}
+
+function renderGrid(list) {
+  const g = document.getElementById("grid");
+  g.innerHTML = "";
+  for (const n of ORDER) {
+    const p = list ? list.find(x => x.num === n) : null;
+    const empty = !p || p.count === 0;
+    const el = document.createElement("div");
+    el.className = "card bg-base-200 border " + (empty ? "border-warning" : "border-base-300");
+    el.innerHTML = `<div class="card-body p-3">
+      <div class="flex items-baseline justify-between">
+        <span class="text-2xl">${ICON[n] || ""}</span>
+        <span class="badge badge-sm badge-ghost">${n}</span>
+      </div>
+      <div class="text-sm font-medium mt-1">${p ? (p.name || "?") : "?"}</div>
+      <div class="text-xs opacity-60">${p ? (p.count + " 檔") : "無資料"}</div>
+    </div>`;
+    g.appendChild(el);
+  }
+}
+
+function renderTable(el, head, rows, emptyMsg) {
+  if (!rows || rows.length === 0) {
+    el.innerHTML = `<tbody><tr><td class="opacity-50 text-sm">${emptyMsg}</td></tr></tbody>`;
+    return;
+  }
+  const th = head.map(h => `<th>${h}</th>`).join("");
+  const tb = rows.map(r => "<tr>" + r.map(c => `<td>${c}</td>`).join("") + "</tr>").join("");
+  el.innerHTML = `<thead><tr>${th}</tr></thead><tbody>${tb}</tbody>`;
+}
+
+async function main() {
+  const s = await getJson("../docs/STRUCTURE.json");
+  const k = await getJson("../docs/KERNEL-INDEX.json");
+
+  if (s.err && k.err) {
+    warn("兩份索引都讀不到。若你是用 file:// 直接開啟，瀏覽器會擋 fetch。"
+       + "請在倉庫根目錄執行 python3 -m http.server 8000，"
+       + "再開 http://localhost:8000/ui/dashboard.html");
+  }
+
+  let list = null;
+  if (s.ok) {
+    list = palaceList(s.ok);
+    if (!list) {
+      warn("STRUCTURE.json 讀到了，但找不到九宮欄位。實際頂層鍵："
+         + Object.keys(s.ok).join(", ") + "。請把這行回報，我改欄位對應，不猜。");
+    }
+  } else {
+    warn("docs/STRUCTURE.json 讀不到（" + s.err + "）。"
+       + "請先合併 PR #17 並執行 python3 tools/gen_structure.py");
+  }
+  renderGrid(list);
+
+  const fxSrc = (s.ok && (s.ok.fixtures || s.ok.tools)) || null;
+  const fxRows = fxSrc
+    ? (Array.isArray(fxSrc) ? fxSrc : Object.keys(fxSrc)).map(f => {
+        const name = (typeof f === "string") ? f : (f.name || f.path || "");
+        return [name.split("/").pop(), name];
+      })
+    : null;
+  renderTable(document.getElementById("fx"), ["fixture", "路徑"], fxRows,
+    "STRUCTURE.json 尚無 fixture 欄位。即時結果請跑 python3 tools/verify_all.py");
+
+  const ke = (k.ok && k.ok.entries) || null;
+  const knRows = ke
+    ? ke.map(e => [e.id,
+                   (e.status || []).join(",") || "-",
+                   (e.layer || []).join(",") || "-",
+                   e.file + ":" + e.line])
+    : null;
+  renderTable(document.getElementById("kn"),
+    ["編號", "主張層", "型別層", "來源"], knRows,
+    "docs/KERNEL-INDEX.json 讀不到。執行 python3 tools/gen_kernel_index.py 產生。");
+
+  if (k.ok && k.ok.unparsed && k.ok.unparsed.length > 0) {
+    warn("kernel 索引有 " + k.ok.unparsed.length
+       + " 行無法完整解析，見 docs/KERNEL-INDEX.md 第三節。漏抓是看得見的，不靜默。");
+  }
+  if (k.ok && k.ok.no_status_tag && k.ok.no_status_tag.length > 0) {
+    warn("有 " + k.ok.no_status_tag.length
+       + " 條 kernel 常量沒有主張層標籤：" + k.ok.no_status_tag.join(", ")
+       + "。無層標籤的等號不得匯入公式庫。");
+  }
+}
+main();
+</script>
+</body>
+</html>
